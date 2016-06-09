@@ -5,6 +5,7 @@ module SpoilyBot
     ( startApp
     ) where
 
+import SpoilyBot.Config
 import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text, append, pack)
 import Network.HTTP.Client (newManager)
@@ -16,23 +17,22 @@ import Web.Telegram.API.Bot (GetMeResponse(..), Token(..), getMe, user_first_nam
 
 type API = "start" :> Get '[PlainText] Text
 
-startApp :: Int -> String -> IO ()
-startApp port telegramToken = run port $ app telegramToken
+startApp :: Config -> IO ()
+startApp (Config port telegramToken) = run port $ app telegramToken
 
-app :: String -> Application
+app :: Token -> Application
 app telegramToken = serve api $ server telegramToken
 
 api :: Proxy API
 api = Proxy
 
-server :: String -> Server API
+server :: Token -> Server API
 server telegramToken = liftIO $ start telegramToken
 
-start :: String -> IO Text
+start :: Token -> IO Text
 start telegramToken = do
-  let token = Token . pack $ "bot" ++ telegramToken
   manager <- newManager tlsManagerSettings
-  res <- getMe token manager
+  res <- getMe telegramToken manager
   case res of
     Left e -> do
       return . pack . show $ e
